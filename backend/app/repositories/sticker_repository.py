@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, func
+from sqlalchemy import Integer, case, func
 from sqlalchemy.orm import Session
 
 from app.models.sticker import Sticker
@@ -10,7 +10,8 @@ class StickerRepository:
         self.db = db
 
     def get_all(self) -> list[Sticker]:
-        return self.db.query(Sticker).order_by(Sticker.group, Sticker.country, Sticker.code).all()
+        group_order = case((Sticker.group == "FWC", "0"), else_=Sticker.group)
+        return self.db.query(Sticker).order_by(group_order, Sticker.country, Sticker.id).all()
 
     def get_by_id(self, sticker_id: int) -> Sticker | None:
         return self.db.query(Sticker).filter(Sticker.id == sticker_id).first()
@@ -19,16 +20,16 @@ class StickerRepository:
         return self.db.query(Sticker).filter(Sticker.code == code).first()
 
     def get_by_country(self, country: str) -> list[Sticker]:
-        return self.db.query(Sticker).filter(Sticker.country == country).order_by(Sticker.code).all()
+        return self.db.query(Sticker).filter(Sticker.country == country).order_by(Sticker.id).all()
 
     def get_owned(self) -> list[Sticker]:
-        return self.db.query(Sticker).filter(Sticker.owned.is_(True)).order_by(Sticker.code).all()
+        return self.db.query(Sticker).filter(Sticker.owned.is_(True)).order_by(Sticker.id).all()
 
     def get_missing(self) -> list[Sticker]:
-        return self.db.query(Sticker).filter(Sticker.owned.is_(False)).order_by(Sticker.code).all()
+        return self.db.query(Sticker).filter(Sticker.owned.is_(False)).order_by(Sticker.id).all()
 
     def get_duplicates(self) -> list[Sticker]:
-        return self.db.query(Sticker).filter(Sticker.quantity > 1).order_by(Sticker.code).all()
+        return self.db.query(Sticker).filter(Sticker.quantity > 1).order_by(Sticker.id).all()
 
     def create(self, data: StickerCreate) -> Sticker:
         sticker = Sticker(**data.model_dump())
